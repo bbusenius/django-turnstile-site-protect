@@ -94,6 +94,62 @@ And include your custom HTML while ensuring the Turnstile widget is included.
 - `TURNSTILE_SIZE`: Widget size (optional, defaults to 'normal', can be 'normal' or 'compact')
 - `TURNSTILE_EXCLUDED_PATHS`: List of URL paths to exclude from protection (optional, defaults to [])
 
+## Session Management
+
+This package uses Django's built-in session framework to track whether a user has passed the Turnstile challenge. The following information will help you manage these sessions effectively:
+
+### Session Duration
+
+By default, Django sessions last for 2 weeks. You can customize this by setting `SESSION_COOKIE_AGE` in your project's settings.py:
+
+```python
+# Set session duration to 1 day (in seconds)
+SESSION_COOKIE_AGE = 86400
+```
+
+Note that changing this setting will only affect new sessions - existing sessions will retain their original expiration time.
+
+Other relevant Django session settings:
+
+```python
+# If set to True, sessions expire when the user closes their browser
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False  # Default is False
+
+# If True, cookies will only be sent via HTTPS connections
+SESSION_COOKIE_SECURE = True  # Recommended for production
+
+# If True, prevents JavaScript from accessing the session cookie
+SESSION_COOKIE_HTTPONLY = True  # Recommended for security
+
+# Change the name of the session cookie
+SESSION_COOKIE_NAME = 'sessionid'  # Default is 'sessionid'
+```
+
+### Cleaning Up Expired Sessions
+
+If you're using database-backed sessions (the default), you should periodically run Django's `clearsessions` management command to remove expired sessions from the database:
+
+```bash
+python manage.py clearsessions
+```
+
+Consider setting up a cron job to run this command daily:
+
+```
+0 3 * * * cd /path/to/your/django/project && /path/to/your/python /path/to/your/manage.py clearsessions
+```
+
+### Clearing All Sessions
+
+In some cases, you may want to invalidate all existing sessions (for example, after changing security settings). You can do this with:
+
+```python
+from django.contrib.sessions.models import Session
+Session.objects.all().delete()
+```
+
+This will log out all users and force them to complete the Turnstile challenge again on their next visit.
+
 ## License
 
 MIT
