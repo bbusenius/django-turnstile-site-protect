@@ -150,6 +150,25 @@ Session.objects.all().delete()
 
 This will log out all users and force them to complete the Turnstile challenge again on their next visit.
 
+## Wagtail Cache
+
+If you're using this package with [wagtail-cache](https://github.com/coderedcorp/wagtail-cache), you need to ensure that both the `SessionMiddleware` and `TurnstileMiddleware` come **before** the Wagtail Cache middleware in your `MIDDLEWARE` config:
+
+```python
+MIDDLEWARE = [
+    'django.contrib.sessions.middleware.SessionMiddleware',  # This must come first
+    'django_turnstile_site_protect.middleware.TurnstileMiddleware',  # Then Turnstile
+    'wagtailcache.cache.UpdateCacheMiddleware',  # Then Wagtail Cache
+    # ... other middleware ...
+    'wagtailcache.cache.FetchFromCacheMiddleware',
+]
+```
+
+This order ensures that:
+1. Sessions are loaded before any caching decisions are made
+2. Turnstile verification checks run before caching
+3. Redirects to the challenge page happen before content is served from or saved to the cache
+
 ## License
 
 MIT
