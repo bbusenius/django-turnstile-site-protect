@@ -83,6 +83,8 @@ And include your custom HTML while ensuring the Turnstile widget is included.
 
 ## Settings
 
+### Config options
+
 - `TURNSTILE_SITE_KEY`: Your Cloudflare Turnstile site key (required)
 - `TURNSTILE_SECRET_KEY`: Your Cloudflare Turnstile secret key (required)
 - `TURNSTILE_VERIFICATION_URL`: URL for token verification (optional, defaults to 'https://challenges.cloudflare.com/turnstile/v0/siteverify')
@@ -93,6 +95,35 @@ And include your custom HTML while ensuring the Turnstile widget is included.
 - `TURNSTILE_LANGUAGE`: Widget language (optional, defaults to 'auto')
 - `TURNSTILE_SIZE`: Widget size (optional, defaults to 'normal', can be 'normal' or 'compact')
 - `TURNSTILE_EXCLUDED_PATHS`: List of URL paths to exclude from protection (optional, defaults to [])
+
+### Environment variables
+
+- `TURNSTILE_ENABLED`: Toggle to enable/disable the middleware (optional, defaults to 'True'). Set to 'False' to disable the middleware. This is useful for unit tests in CI environments.
+
+## Disabling the Middleware for Testing
+
+For unit tests, especially in CI environments, you may want to disable the Turnstile middleware to prevent test failures due to Turnstile challenges. You can do this by setting the `TURNSTILE_ENABLED` environment variable to `False`:
+
+```python
+# In your test setup code
+import os
+os.environ['TURNSTILE_ENABLED'] = 'False'
+```
+
+Or in your CI configuration file:
+
+```yaml
+env:
+  TURNSTILE_ENABLED: 'False'
+```
+
+Accepted values to disable the middleware are (case-insensitive):
+- `False`
+- `0`
+- `no`
+- `off`
+
+Any other value (or if the variable is not set) will keep the middleware enabled.
 
 ## Session Management
 

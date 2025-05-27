@@ -2,6 +2,7 @@ from django.conf import settings
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils.deprecation import MiddlewareMixin
+import os
 import re
 
 
@@ -16,6 +17,9 @@ class TurnstileMiddleware(MiddlewareMixin):
         self.get_response = get_response
         self.session_key = getattr(settings, 'TURNSTILE_SESSION_KEY', 'turnstile_passed')
         self.excluded_paths = getattr(settings, 'TURNSTILE_EXCLUDED_PATHS', [])
+        
+        # Check if middleware is enabled (defaults to True if not specified)
+        self.enabled = os.environ.get('TURNSTILE_ENABLED', 'True').lower() not in ('false', '0', 'no', 'off')
         
         # Compile excluded paths into regex patterns for faster matching
         self.excluded_patterns = [re.compile(path) for path in self.excluded_paths]
@@ -41,6 +45,10 @@ class TurnstileMiddleware(MiddlewareMixin):
         """
         Process the request and redirect to challenge if user hasn't passed Turnstile.
         """
+        # Skip middleware completely if disabled via environment variable
+        if not self.enabled:
+            return None
+            
         # Skip verification for excluded paths
         if self.is_path_excluded(request.path):
             return None
