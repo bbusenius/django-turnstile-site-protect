@@ -96,6 +96,7 @@ And include your custom HTML while ensuring the Turnstile widget is included.
 - `TURNSTILE_SIZE`: Widget size (optional, defaults to 'normal', can be 'normal' or 'compact')
 - `TURNSTILE_EXCLUDED_PATHS`: List of URL paths to exclude from protection (optional, defaults to [])
 - `TURNSTILE_EXCLUDED_IPS`: List of IP addresses or IP ranges to exclude from protection (optional, defaults to []). Supports both individual IPs and ranges in the format `start_ip-end_ip`.
+- `TURNSTILE_EXCLUDED_DOMAINS`: List of domain names to exclude from protection (optional, defaults to []). Supports exact matches and wildcard subdomains using the format `*.example.com`.
 
 ### Environment variables
 
@@ -220,6 +221,39 @@ The middleware checks the client's IP address against the configured list:
 3. It then checks if the IP matches any individual IP or falls within any of the configured ranges
 
 IPs are converted to their integer representation internally for efficient range checking.
+
+## Domain Exemptions
+
+For multisite installations (like Wagtail sites with public and intranet instances), you can exempt specific domains from Turnstile verification. This is particularly useful when one site needs protection while the other doesn't, for example:
+
+- When running public and intranet sites on the same codebase
+- When intranet sites already have authentication requirements
+- For development or staging environments on specific domains
+
+To configure domain exemptions, add the `TURNSTILE_EXCLUDED_DOMAINS` setting to your settings.py:
+
+```python
+TURNSTILE_EXCLUDED_DOMAINS = [
+    # Exact domain matches
+    'intranet.example.org',
+    'staff.example.org',
+    
+    # Wildcard subdomains
+    '*.internal.example.org',  # Exempts any.internal.example.org, but not internal.example.org itself
+]
+```
+
+When a user visits a site with one of these domains, they will bypass the Turnstile challenge completely.
+
+### How It Works
+
+The middleware checks the request's host against the configured list:
+
+1. First, it extracts the hostname from the request (removing any port number)
+2. It then checks for exact matches against the list of excluded domains
+3. For wildcard entries (starting with `*.`), it checks if the hostname is a subdomain of the specified domain
+
+This allows granular control over which sites or subdomains require Turnstile verification.
 
 ## Wagtail Cache
 

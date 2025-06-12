@@ -41,6 +41,9 @@ class TurnstileMiddleware(MiddlewareMixin):
         self.excluded_ips = getattr(settings, 'TURNSTILE_EXCLUDED_IPS', [])
         self.ip_ranges = self._parse_ip_ranges(self.excluded_ips)
 
+        # Get excluded domains from settings
+        self.excluded_domains = getattr(settings, 'TURNSTILE_EXCLUDED_DOMAINS', [])
+
     def is_path_excluded(self, path):
         """
         Check if the current path should be excluded from Turnstile verification.
@@ -86,6 +89,29 @@ class TurnstileMiddleware(MiddlewareMixin):
 
         return networks
 
+    def is_domain_excluded(self, request):
+        """
+        Check if the current domain should be excluded from Turnstile verification.
+        """
+        host = request.get_host()
+
+        # Remove port if present
+        if ':' in host:
+            host = host.split(':', 1)[0]
+
+        for domain in self.excluded_domains:
+            # Direct match
+            if host == domain:
+                return True
+
+            # Wildcard match (*.example.com matches subdomain.example.com)
+            if domain.startswith('*.') and host.endswith(domain[1:]):
+                # Make sure it's a proper subdomain match
+                if '.' + host == domain[1:] or host.endswith('.' + domain[2:]):
+                    return True
+
+        return False
+    
     def is_ip_excluded(self, request):
         """
         Check if the requester's IP address should be excluded from Turnstile verification.
@@ -131,6 +157,10 @@ class TurnstileMiddleware(MiddlewareMixin):
 
         # Skip verification for excluded IPs
         if self.is_ip_excluded(request):
+            return None
+
+        # Skip verification for excluded domains
+        if self.is_domain_excluded(request):
             return None
 
         # Check if user has passed Turnstile challenge
