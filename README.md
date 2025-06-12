@@ -95,6 +95,7 @@ And include your custom HTML while ensuring the Turnstile widget is included.
 - `TURNSTILE_LANGUAGE`: Widget language (optional, defaults to 'auto')
 - `TURNSTILE_SIZE`: Widget size (optional, defaults to 'normal', can be 'normal' or 'compact')
 - `TURNSTILE_EXCLUDED_PATHS`: List of URL paths to exclude from protection (optional, defaults to [])
+- `TURNSTILE_EXCLUDED_IPS`: List of IP addresses or IP ranges to exclude from protection (optional, defaults to []). Supports both individual IPs and ranges in the format `start_ip-end_ip`.
 
 ### Environment variables
 
@@ -180,6 +181,45 @@ Session.objects.all().delete()
 ```
 
 This will log out all users and force them to complete the Turnstile challenge again on their next visit.
+
+## IP Address Exemptions
+
+You can exempt specific IP addresses or IP ranges from the Turnstile challenge. This is useful for:
+
+- Allowing internal networks to access the site without verification
+- Bypassing verification for specific trusted locations
+- Development and testing environments
+
+To configure IP exemptions, add the `TURNSTILE_EXCLUDED_IPS` setting to your settings.py:
+
+```python
+TURNSTILE_EXCLUDED_IPS = [
+    # Individual IPs
+    '192.168.1.100',
+    '10.0.0.1',
+    
+    # IP ranges in the format 'start_ip-end_ip'
+    '192.168.1.0-192.168.1.255',    # Entire /24 subnet
+    '10.0.0.0-10.255.255.255',      # All private 10.x.x.x addresses
+    '172.16.0.0-172.31.255.255',    # Private IP range
+    
+    # For local development
+    '127.0.0.1',
+    '::1',  # IPv6 localhost
+]
+```
+
+When a user connects from one of these IP addresses, they will bypass the Turnstile challenge completely.
+
+### How It Works
+
+The middleware checks the client's IP address against the configured list:
+
+1. First, it looks at the `X-Forwarded-For` header (commonly set by proxies and load balancers)
+2. If that's not available, it falls back to `REMOTE_ADDR`
+3. It then checks if the IP matches any individual IP or falls within any of the configured ranges
+
+IPs are converted to their integer representation internally for efficient range checking.
 
 ## Wagtail Cache
 
