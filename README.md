@@ -274,6 +274,41 @@ This order ensures that:
 2. Turnstile verification checks run before caching
 3. Redirects to the challenge page happen before content is served from or saved to the cache
 
+## Testing
+
+The package includes a comprehensive test suite covering middleware functionality, views, and configuration handling. To run the tests, you'll need pytest and its Django plugin.
+
+### Prerequisites
+
+All testing dependencies are included in the `requirements-dev.txt` file. Install them with:
+
+```bash
+pip install -r requirements-dev.txt
+```
+
+### Running Tests
+
+Run all tests:
+
+```bash
+python -m pytest -v
+```
+
+Run specific test modules:
+
+```bash
+# Test middleware only
+python -m pytest django_turnstile_site_protect/tests/test_middleware.py
+
+# Test views only
+python -m pytest django_turnstile_site_protect/tests/test_views.py
+```
+
+### Testing Notes
+
+- Tests automatically disable the middleware using environment variables
+- The test suite mocks external API calls to Cloudflare
+
 ## License
 
 MIT
