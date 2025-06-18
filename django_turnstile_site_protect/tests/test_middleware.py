@@ -121,10 +121,18 @@ class TestTurnstileMiddleware(TestCase):
 
     def test_process_request_redirects_to_challenge(self):
         """Test that unverified requests are redirected to challenge."""
+        # Create a request with an empty session
         request = self.get_request()
-        response = self.middleware.process_request(request)
-        self.assertEqual(response.status_code, 302)
-        self.assertTrue(response.url.startswith('/challenge/'))
+        request.session = {}
+
+        # Ensure middleware is enabled
+        with patch.object(self.middleware, 'enabled', True):
+            response = self.middleware.process_request(request)
+
+            # Check that we got a redirect response
+            self.assertIsNotNone(response, "Expected redirect response but got None")
+            self.assertEqual(response.status_code, 302)
+            self.assertTrue(response.url.startswith('/challenge/'))
 
     def test_process_request_allows_verified_requests(self):
         """Test that verified requests are allowed through."""
@@ -141,22 +149,25 @@ class TestTurnstileMiddleware(TestCase):
         # Create a new middleware instance with environment variable set
         middleware = TurnstileMiddleware(self.get_response)
         request = self.get_request()
+        request.session = {}  # Ensure request has a session
         response = middleware.process_request(request)
         # When disabled, middleware should not return a response (should pass through)
         self.assertIsNone(response)
 
+    @override_settings(TURNSTILE_SESSION_KEY='custom_verification_key')
     def test_middleware_with_custom_session_key(self):
         """Test middleware with a custom session key."""
-        from django.test import override_settings
+        # Create new middleware with the overridden settings
+        middleware = TurnstileMiddleware(self.get_response)
 
-        custom_key = 'custom_verified_key'
+        # Verify the middleware uses the custom session key
+        self.assertEqual(middleware.session_key, 'custom_verification_key')
 
-        with override_settings(TURNSTILE_SESSION_KEY=custom_key):
-            middleware = TurnstileMiddleware(self.get_response)
+        # Test that middleware allows verified requests
+        request = self.get_request()
+        request.session = {'custom_verification_key': True}
 
-            # Test that middleware allows verified requests
-            request = self.get_request()
-            request.session[custom_key] = True
+        with patch.object(middleware, 'enabled', True):
             response = middleware.process_request(request)
             self.assertIsNone(response)
 
@@ -164,6 +175,9 @@ class TestTurnstileMiddleware(TestCase):
             request = self.get_request()
             request.session = {}
             response = middleware.process_request(request)
+
+            # Check that we got a redirect response
+            self.assertIsNotNone(response, "Expected redirect response but got None")
             self.assertEqual(response.status_code, 302)
             self.assertTrue(response.url.startswith('/challenge/'))
 
@@ -181,17 +195,24 @@ class TestTurnstileMiddleware(TestCase):
             # Create middleware - this will call reverse() twice
             middleware = TurnstileMiddleware(self.get_response)
 
-            # Now test the middleware
+            # Now test the middleware with properly set up request
             request = self.get_request()
-            response = middleware.process_request(request)
+            request.session = {}
 
-            self.assertEqual(response.status_code, 302)
-            self.assertTrue(response.url.startswith('/custom/challenge/'))
+            with patch.object(middleware, 'enabled', True):
+                response = middleware.process_request(request)
 
-            # Verify reverse was called with the expected arguments
-            self.assertEqual(mock_reverse.call_count, 2)
-            mock_reverse.assert_any_call('turnstile_challenge')
-            mock_reverse.assert_any_call('turnstile_verify')
+                # Check that we got a redirect response
+                self.assertIsNotNone(
+                    response, "Expected redirect response but got None"
+                )
+                self.assertEqual(response.status_code, 302)
+                self.assertTrue(response.url.startswith('/custom/challenge/'))
+
+                # Verify reverse was called with the expected arguments
+                self.assertEqual(mock_reverse.call_count, 2)
+                mock_reverse.assert_any_call('turnstile_challenge')
+                mock_reverse.assert_any_call('turnstile_verify')
 
     def test_middleware_with_custom_excluded_paths(self):
         """Test middleware with custom excluded paths."""
