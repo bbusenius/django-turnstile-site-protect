@@ -194,7 +194,7 @@ class TestVerifyView(TestCase):
 
     @patch('django_turnstile_site_protect.views.requests.post')
     def test_verify_view_with_custom_session_key(self, mock_post):
-        """Test verify view with custom session key setting."""
+        """Test verify view with custom session key."""
         mock_response = MagicMock()
         mock_response.json.return_value = {'success': True}
         mock_post.return_value = mock_response
@@ -205,11 +205,18 @@ class TestVerifyView(TestCase):
             '/verify/', {'cf-turnstile-response': 'test-token', 'next': '/protected/'}
         )
         request.session = {}
+        # Need to add get_host method for url validation in the view
+        request.get_host = lambda: 'testserver'
 
         with self.settings(
             TURNSTILE_SECRET_KEY='test-secret-key', TURNSTILE_SESSION_KEY=custom_key
         ):
-            # Check that the custom session key was used
+            # Call the view function first
+            from django_turnstile_site_protect.views import verify_view
+
+            verify_view(request)
+
+            # Now check that the custom session key was used
             self.assertTrue(request.session.get(custom_key))
             self.assertNotIn('turnstile_passed', request.session)
 
