@@ -1,10 +1,8 @@
 """Pytest configuration and fixtures for django-turnstile-site-protect tests."""
-import os
-import sys
 
 import pytest
-from django.conf import settings, global_settings
-from django.test import RequestFactory, TestCase
+from django.conf import global_settings, settings
+from django.test import RequestFactory
 
 # Configure Django settings for tests
 if not settings.configured:
@@ -31,7 +29,13 @@ if not settings.configured:
         TURNSTILE_EXCLUDED_PATHS=['/excluded/path/'],
         TURNSTILE_EXCLUDED_IPS=['192.168.1.1', '10.0.0.0-10.0.0.255'],
         TURNSTILE_EXCLUDED_DOMAINS=['example.com', '*.test.com'],
-        ALLOWED_HOSTS=['testserver', 'example.com', 'test.com', 'subdomain.test.com', 'example.org'],
+        ALLOWED_HOSTS=[
+            'testserver',
+            'example.com',
+            'test.com',
+            'subdomain.test.com',
+            'example.org',
+        ],
         TEMPLATES=[
             {
                 'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -54,6 +58,7 @@ if not settings.configured:
 
     # Set up Django
     import django
+
     django.setup()
 
 
@@ -67,6 +72,7 @@ def rf():
 def turnstile_settings():
     """Fixture to modify Turnstile settings for testing."""
     from django.test import override_settings
+
     return override_settings(
         TURNSTILE_SITE_KEY='test-site-key',
         TURNSTILE_SECRET_KEY='test-secret-key',

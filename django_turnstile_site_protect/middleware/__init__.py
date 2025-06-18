@@ -111,7 +111,7 @@ class TurnstileMiddleware(MiddlewareMixin):
                     return True
 
         return False
-    
+
     def is_ip_excluded(self, request):
         """
         Check if the requester's IP address should be excluded from Turnstile verification.

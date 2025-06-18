@@ -1,7 +1,6 @@
 """Tests for the TurnstileMiddleware class."""
 
-from unittest.mock import patch, Mock
-from ipaddress import ip_address, ip_network
+from unittest.mock import patch
 
 from django.http import HttpResponse
 from django.test import RequestFactory, TestCase, override_settings
@@ -37,7 +36,7 @@ class TestTurnstileMiddleware(TestCase):
                 # Note: The middleware only supports single IPs and range format (X.X.X.X-Y.Y.Y.Y)
                 # Converting CIDR to range format for testing:
                 '192.168.1.0-192.168.1.255',  # 192.168.1.0/24 in range format
-                '10.0.0.0-10.255.255.255',    # 10.0.0.0/8 in range format
+                '10.0.0.0-10.255.255.255',  # 10.0.0.0/8 in range format
                 '203.0.112.0-203.0.113.255',  # Already in range format
             ],
             'TURNSTILE_EXCLUDED_DOMAINS': ['example.com', '.test.com'],
@@ -91,15 +90,15 @@ class TestTurnstileMiddleware(TestCase):
         # Set up the specific IP ranges for this test
         excluded_ips = [
             '192.168.1.0-192.168.1.255',  # 192.168.1.0/24 in range format
-            '10.0.0.0-10.255.255.255',    # 10.0.0.0/8 in range format
+            '10.0.0.0-10.255.255.255',  # 10.0.0.0/8 in range format
             '203.0.112.0-203.0.113.255',  # Already in range format
         ]
-        
+
         # Apply settings and create a fresh middleware instance
         with self.settings(TURNSTILE_EXCLUDED_IPS=excluded_ips):
             # Create a new middleware instance with these settings
             test_middleware = TurnstileMiddleware(self.get_response)
-            
+
             # Run test cases against the newly created middleware
             for ip, expected in test_cases:
                 with self.subTest(ip=ip, expected=expected):
@@ -223,9 +222,9 @@ class TestTurnstileMiddleware(TestCase):
             # Test with invalid IP format - should be handled gracefully by middleware
             with self.settings(TURNSTILE_EXCLUDED_IPS=['invalid-ip-range']):
                 middleware = TurnstileMiddleware(self.get_response)
-                
+
                 # Test with an IP that would be in the range if it was valid
                 request = self.get_request(REMOTE_ADDR='192.168.1.1')
-                
+
                 # The middleware should handle invalid IP ranges gracefully
                 self.assertFalse(middleware.is_ip_excluded(request))
