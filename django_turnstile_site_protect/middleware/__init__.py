@@ -155,6 +155,11 @@ class TurnstileMiddleware(MiddlewareMixin):
         if self.is_path_excluded(request.path):
             return None
 
+        # Check if user has already passed Turnstile challenge (fast check first)
+        if request.session.get(self.session_key):
+            return None
+
+        # For users without valid sessions, apply exclusion rules
         # Skip verification for excluded IPs
         if self.is_ip_excluded(request):
             return None
@@ -163,11 +168,7 @@ class TurnstileMiddleware(MiddlewareMixin):
         if self.is_domain_excluded(request):
             return None
 
-        # Check if user has passed Turnstile challenge
-        if not request.session.get(self.session_key):
-            # Store the original path for redirection after verification
-            next_url = request.path
-            challenge_url = f"{self.challenge_path}?next={next_url}"
-            return redirect(challenge_url)
-
-        return None
+        # User hasn't passed Turnstile and no exclusions apply - redirect to challenge
+        next_url = request.path
+        challenge_url = f"{self.challenge_path}?next={next_url}"
+        return redirect(challenge_url)
